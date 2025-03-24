@@ -7,7 +7,7 @@ bool flagHotendEnable = false;  // Флаг включения нагреват�
 bool flagStepperEnable = false;  // Флаг включения вращения
 
 void buttonStateHandler(int flagId);
-
+#define logEnable
 
 // билдер
 void build(gh::Builder& b) {
@@ -31,7 +31,12 @@ void build(gh::Builder& b) {
         gh::Row r(b);
         b.Label("Управление хотэндом:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
         b.Spinner().value(230).noLabel().range(190,270,2).size(2);
-        if (b.Button().icon("").noLabel().size(1).click()) buttonStateHandler(1);
+        if (b.Button().icon("").noLabel().size(1).click()) {
+            #ifdef logEnable
+            Serial.println("Нажата кнопка включения хотенда.");
+            #endif
+            buttonStateHandler(1);
+        }
         }
     }
     //Третий виджет, управление скоростью ШД
@@ -52,6 +57,7 @@ void build(gh::Builder& b) {
             if (b.Button().click()) hub.update(F("stepperLed")).value(1);
             }
         }
+    
 }
 
 
@@ -68,27 +74,30 @@ void buttonStateHandler(int flagId) {
 
 void hubStateHandler() {
     if (flagHotendEnable == true) {
-        hub.update(F("hotendLed")).value(1); 
+        hub.update("hotendLed").value(1); 
     } else {
-        hub.update(F("hotendLed")).value(0);
+        hub.update("hotendLed").value(0);
     }
 
     if (flagStepperEnable == true) {
-        hub.update(F("stepperLed")).value(1);
+        hub.update("stepperLed").value(1);
     } else {
-        hub.update(F("stepperLed")).value(0);
+        hub.update("stepperLed").value(0);
     }
 }
 
 
 void setup() {
+    #ifdef logEnable
+    Serial.begin(115200);
+    #endif
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-
+    
     // настройка MQTT/Serial/Bluetooth..
     hub.onBuild(build); // подключаем билдер
     hub.begin();        // запускаем систему
