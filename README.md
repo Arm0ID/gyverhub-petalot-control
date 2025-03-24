@@ -1,5 +1,9 @@
 # gyverhub-petalot-control
 
+<div align="center">
+  <img src="screenshots/tractor-solid.svg" width="30%">
+</div>
+
 Проект для управления Petalot через веб-интерфейс GyverHub.
 
 ## Основные функции
