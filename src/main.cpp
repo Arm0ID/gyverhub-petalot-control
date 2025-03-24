@@ -6,8 +6,7 @@ GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя уст�
 bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
 
-void buttonStateHandler(int flagId);
-#define logEnable
+#define logEnable // Логирование
 
 // билдер
 void build(gh::Builder& b) {
@@ -24,7 +23,7 @@ void build(gh::Builder& b) {
         {
         gh::Row r(b);
         b.Label("Температура:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
-        b.LED("hotendLed").value(0).size(1).noLabel().noTab();
+        b.LED_("hotendLed").value(0).size(1).noLabel().noTab();
         }
     b.GaugeLinear().value(33).icon("").range(0,300,1).unit("°").noLabel().size(2);
         {
@@ -33,9 +32,9 @@ void build(gh::Builder& b) {
         b.Spinner().value(230).noLabel().range(190,270,2).size(2);
         if (b.Button().icon("").noLabel().size(1).click()) {
             #ifdef logEnable
-            Serial.println("Нажата кнопка включения хотенда.");
+            Serial.println("Нажата кнопка включения/выключения хотенда.");
             #endif
-            buttonStateHandler(1);
+            flagHotendEnable = !flagHotendEnable;
         }
         }
     }
@@ -53,22 +52,15 @@ void build(gh::Builder& b) {
             gh::Row r(b);
             b.Label("Намотки нити:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
             b.Spinner().value(230).noLabel().range(5,20,1).size(2);
-            //if (b.Button().icon("").noLabel().size(1).click()) buttonStateHandler(2);
-            if (b.Button().click()) hub.update(F("stepperLed")).value(1);
+            if (b.Button().icon("").noLabel().size(1).click()) {
+                #ifdef logEnable
+                Serial.println("Нажата кнопка включения/выключения ШД.");
+                #endif
+                flagStepperEnable = !flagStepperEnable;
+            }
             }
         }
     
-}
-
-
-// Функция для изменения значения флага
-void buttonStateHandler(int flagId) {
-    Serial.println("Функция buttonStateHandler, параметр: " + String(flagId));
-    if (flagId == 1) {
-        flagHotendEnable = !flagHotendEnable;  // Изменяем флаг для первой кнопки
-    } else if (flagId == 2) {
-        flagStepperEnable = !flagStepperEnable;  // Изменяем флаг для второй кнопки
-    }
 }
 
 
@@ -105,7 +97,7 @@ void setup() {
 }
 
 void loop() {
-    // hubStateHandler();
+    hubStateHandler();
     hub.tick();         // тикаем тут
     
 }
