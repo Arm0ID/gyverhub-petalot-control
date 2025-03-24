@@ -1,10 +1,12 @@
 #include <GyverHub.h>
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
 #include "secrets.h"
+#include "thermosense.h"
 
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
+static volatile int a = 0;
 
 #define logEnable // Логирование
 
@@ -76,6 +78,7 @@ void hubStateHandler() {
     } else {
         hub.update("stepperLed").value(0);
     }
+    thermosenseMeasurment();
 }
 
 
@@ -94,6 +97,10 @@ void setup() {
     hub.onBuild(build); // подключаем билдер
     hub.begin();        // запускаем систему
     Serial.println("Petalot GyverHub запущен!");
+
+    // Инициализация ТермоИзмерений
+    thermosenseSetup();
+
 }
 
 void loop() {
