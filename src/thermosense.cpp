@@ -18,10 +18,10 @@ bool esp32 = true;       // change to false when using Arduino
 int ThermistorPin;
 double adcMax, Vs;
 
-double R1 = 10000.0;   // voltage divider resistor value
+double R1 = 100000.0;   // voltage divider resistor value
 double Beta = 3950.0;  // Beta value
 double To = 298.15;    // Temperature in Kelvin for 25 degree Celsius
-double Ro = 10000.0;   // Resistance of Thermistor at 25 degree Celsius
+double Ro = 100000.0;   // Resistance of Thermistor at 25 degree Celsius
 
 // The ESP32 lookup table varies from device to device, use the program from 
 // https://github.com/e-tinkers/esp32-adc-calibrate
@@ -308,20 +308,44 @@ void thermosenseSetup() {
     Vs = 3.3;        // supply voltage
 }
 
-void thermosenseMeasurment() {
+double thermosenseMeasurment() {
+    static double TcValues[sizeMeasureArray] = {0}; // Массив для хранения 10 значений Tc
+    static int index = 0;             // Индекс для записи нового значения в массив
+    static bool filled = false;       // Флаг, показывающий, заполнен ли массив полностью
+
     double Vout, Rt = 0;
     double T, Tc, Tf = 0;
-
     double adc = 0;
-  
+
     adc = analogRead(ThermistorPin);
     adc = ADC_LUT[(int)adc];
 
-    Vout = adc * Vs/adcMax;
+    Vout = adc * Vs / adcMax;
     Rt = R1 * Vout / (Vs - Vout);
 
-    T = 1/(1/To + log(Rt/Ro)/Beta);    // Temperature in Kelvin
-    Tc = T - 273.15;                   // Celsius
-    Tf = Tc * 9 / 5 + 32;              // Fahrenheit
-    if (Tc > 0) Serial.println(Tc);
+    T = 1 / (1 / To + log(Rt / Ro) / Beta); // Temperature in Kelvin
+    Tc = T - 273.15;                        // Celsius
+    Tf = Tc * 9 / 5 + 32;                   // Fahrenheit
+
+    // Обновляем массив значений Tc
+    TcValues[index] = Tc;
+    index = (index + 1) % sizeMeasureArray; // Циклически увеличиваем индекс
+
+    // Если массив полностью заполнен, выводим среднее значение
+    if (!filled && index == 0) {
+        filled = true; // Устанавливаем флаг, что массив заполнен
+    }
+
+    if (filled) {
+        double sum = 0;
+        for (int i = 0; i < sizeMeasureArray; i++) {
+            sum += TcValues[i];
+        }
+        double averageTc = sum / sizeMeasureArray; // Вычисляем среднее арифметическое
+        #ifdef logEnable
+            Serial.print("Average Tc: ");
+            Serial.println(averageTc);
+        #endif
+        return(averageTc);
+    }
 }

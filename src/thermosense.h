@@ -11,6 +11,7 @@
 #include "soc/soc_caps.h"
 #include "driver/uart.h"
 #include "freertos/queue.h"
+#include "settings.h"
 
 void thermosenseSetup();
-void thermosenseMeasurment();
+double thermosenseMeasurment();

@@ -3,12 +3,12 @@ GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя уст�
 #include "secrets.h"
 #include "thermosense.h"
 
+
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
 static volatile int a = 0;
 
-#define logEnable // Логирование
 
 // билдер
 void build(gh::Builder& b) {
@@ -27,7 +27,7 @@ void build(gh::Builder& b) {
         b.Label("Температура:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
         b.LED_("hotendLed").value(0).size(1).noLabel().noTab();
         }
-    b.GaugeLinear().value(33).icon("").range(0,300,1).unit("°").noLabel().size(2);
+    b.GaugeLinear_("hotendGaugeLinear").value(33).icon("").range(0,300,1).unit("°").noLabel().size(2);
         {
         gh::Row r(b);
         b.Label("Управление хотэндом:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
@@ -78,7 +78,7 @@ void hubStateHandler() {
     } else {
         hub.update("stepperLed").value(0);
     }
-    thermosenseMeasurment();
+    hub.update("hotendGaugeLinear").value(thermosenseMeasurment());
 }
 
 
