@@ -7,15 +7,18 @@
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
 
 // Экземпляр GyverPID
-GyverPID regulator(1, 0, 0);
+float PID_P = 19.2;
+float PID_I = 3.84;
+float PID_D = 24.0;
+GyverPID regulator(PID_P, PID_I, PID_D);
+
 
 // Экземпляр таймера
 gh::Timer tmr2(300);
 
 // Глобальные переменные-флаги
-bool flagHotendEnable = true;  // Флаг включения нагревателя
+bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
-static volatile int a = 0;
 bool hotendLedState = false;
 bool stepperLedState = false;
 
@@ -75,7 +78,27 @@ void build(gh::Builder& b) {
             }
             }
         }
-    
+    //Четвертый виджет, настройка PID
+    {
+        gh::Col r(b);
+            b.Space().size(1,10);
+            {
+                gh::Row r(b);
+                b.Label("Калибровка PID:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
+                b.LED_("heatingLed").value(0).size(1).label("нагрев:").noTab().fontSize(12);
+            }
+            {
+                gh::Row r(b);
+                b.Space().size(1);
+                b.Input_("inputPID_P", &PID_P).value(PID_P).size(3).fontSize(16).label("Коэф. P");
+                b.Space().size(1);
+                b.Input_("inputPID_I", &PID_I).value(PID_I).size(3).fontSize(16).label("Коэф. I");
+                b.Space().size(1);
+                b.Input_("inputPID_D", &PID_D).value(PID_D).size(3).fontSize(16).label("Коэф. D");
+                b.Space().size(1);
+
+            }
+    }
 }
 
 
@@ -107,7 +130,15 @@ void hubStateHandler() {
                         " Установлена температура: " + hub.getValue("hotendSpinner");
             Serial.println(L);
         #endif
+
+        regulator.Kp = hub.getValue("inputPID_P").toFloat();
+        regulator.Ki = hub.getValue("inputPID_I").toFloat();
+        regulator.Kd = hub.getValue("inputPID_D").toFloat();
+
+        if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
+        else hub.update("heatingLed").value(0);
     }
+
 }
 
 
