@@ -2,9 +2,9 @@
 
 #pragma once
 
-#define logEnable // Логирование
+//#define logEnable // Логирование
 
 // thermasense - Настройки термоизмерений
-const static int sizeMeasureArray = 1000; // Кол-во измерений для арифм. фильтра 
+const static int sizeMeasureArray = 10; // Кол-во измерений для арифм. фильтра 
 
 
