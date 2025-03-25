@@ -344,10 +344,6 @@ double thermosenseMeasurment() {
             sum += TcValues[i];
         }
         double averageTc = sum / sizeMeasureArray; // Вычисляем среднее арифметическое
-        // #ifdef logEnable
-        //         Serial.print("Average Tc: ");
-        //         Serial.println(averageTc);
-        // #endif
         return(averageTc);
     }
 }

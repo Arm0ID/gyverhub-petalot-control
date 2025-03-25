@@ -6,11 +6,16 @@
 // Экземпляр GyverHUB
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
 
+// Стартовые значения PID
+// float PID_P = 19.2;
+// float PID_I = 3.84;
+// float PID_D = 24.0;
+float PID_P = 15;
+float PID_I = 3;
+float PID_D = 88.66;
 // Экземпляр GyverPID
-float PID_P = 19.2;
-float PID_I = 3.84;
-float PID_D = 24.0;
 GyverPID regulator(PID_P, PID_I, PID_D);
+
 
 
 // Экземпляр таймера
@@ -122,6 +127,11 @@ void hubStateHandler() {
             analogWrite(32, regulator.getResult());
             regulator.setpoint = hub.getValue("hotendSpinner").toInt();
         } else analogWrite(32, 0);
+        
+        #ifdef buildGraph
+            Serial.println(Temp);
+        #endif
+
 
         // Логирование
         #ifdef logEnable
@@ -147,7 +157,7 @@ void setup() {
     #ifdef logEnable
     Serial.begin(115200);
     #endif
-
+    Serial.begin(115200);
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {

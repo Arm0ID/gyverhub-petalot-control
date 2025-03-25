@@ -3,8 +3,9 @@
 #pragma once
 
 //#define logEnable // Логирование
+#define buildGraph // Постройка графика
 
-// thermasense - Настройки термоизмерений
+// Настройки термоизмерений
 const static int sizeMeasureArray = 10; // Кол-во измерений для арифм. фильтра 
 
 
