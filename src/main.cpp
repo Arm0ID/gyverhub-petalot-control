@@ -7,27 +7,24 @@
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
 
 // Стартовые значения PID
-// float PID_P = 19.2;
-// float PID_I = 3.84;
-// float PID_D = 24.0;
-float PID_P = 15;
-float PID_I = 3;
-float PID_D = 88.66;
+float PID_P = 19.2;
+float PID_I = 3.84;
+float PID_D = 24.0;
+
 // Экземпляр GyverPID
 GyverPID regulator(PID_P, PID_I, PID_D);
 
-
-
 // Экземпляр таймера
-gh::Timer tmr2(300);
+gh::Timer tmr2(100);
 
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
 bool hotendLedState = false;
 bool stepperLedState = false;
+static int tempCounter = 0; // Временное хранилище для построения графиков
 
-int hotendSpinnerValue = 70; // Хранит базовое значение спиннера хотенда и нагрев
+int hotendSpinnerValue = 120; // Хранит базовое значение спиннера хотенда и нагрев
 
 // билдер
 void build(gh::Builder& b) {
@@ -90,7 +87,7 @@ void build(gh::Builder& b) {
             {
                 gh::Row r(b);
                 b.Label("Калибровка PID:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
-                b.LED_("heatingLed").value(0).size(1).label("нагрев:").noTab().fontSize(12);
+                if (b.LED_("heatingLed").value(0).size(1).label("нагрев:").noTab().fontSize(12).click()) tempCounter = 0;
             }
             {
                 gh::Row r(b);
@@ -129,7 +126,12 @@ void hubStateHandler() {
         } else analogWrite(32, 0);
         
         #ifdef buildGraph
+        
+        if (tempCounter < 1000) {
+            ++tempCounter;
             Serial.println(Temp);
+        }
+            
         #endif
 
 
