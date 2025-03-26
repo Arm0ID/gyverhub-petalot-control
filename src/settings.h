@@ -6,6 +6,6 @@
 #define buildGraph // Постройка графика
 
 // Настройки термоизмерений
-const static int sizeMeasureArray = 3; // Кол-во измерений для арифм. фильтра 
+const static int sizeMeasureArray = 16; // Кол-во измерений для арифм. фильтра 
 
 

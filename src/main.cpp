@@ -7,9 +7,9 @@
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
 
 // Стартовые значения PID
-float PID_P = 19.2;
-float PID_I = 1;
-float PID_D = 24.0;
+float PID_P = 31;
+float PID_I = 0.0;
+float PID_D = 32;
 
 // Экземпляр GyverPID
 GyverPID regulator(PID_P, PID_I, PID_D);
@@ -106,8 +106,23 @@ void build(gh::Builder& b) {
                 b.Space().size(1);
                 b.Input_("inputPID_D", &PID_D).value(PID_D).size(3).fontSize(16).label("Коэф. D");
                 b.Space().size(1);
-
+            
             }
+            #ifdef buildGraph
+            b.Label("Онлайн катировки:").noTab().noLabel().align(gh::Align::Left).fontSize(16).size(3, 16);
+            {
+                gh::Row r(b);
+                b.Display_("displayP").label("Коэф. P").align(gh::Align::Center).fontSize(16).size(1, 10);
+                b.Display_("displayI").label("Коэф. I").align(gh::Align::Center).fontSize(16).size(1, 10);
+                b.Display_("displayD").label("Коэф. D").align(gh::Align::Center).fontSize(16).size(1, 10);
+            }
+            {
+                gh::Row r(b);
+                b.Display_("displayTemp").label("Temp").align(gh::Align::Center).fontSize(16).size(1, 10);
+                b.Display_("displayResult").label("Вывод Result(PID):").align(gh::Align::Center).fontSize(16).size(1, 10);
+                b.Display_("displayOutput").label("Вывод Output(PID):").align(gh::Align::Center).fontSize(16).size(1, 10);
+            }
+            #endif
     }
 }
 
@@ -127,22 +142,13 @@ void hubStateHandler() {
         hub.update("hotendGaugeLinear").value(Temp);
       
         if (flagHotendEnable == true) {
-            //Отправляем сигнал хотенду
-            regulator.input = Temp;
-            analogWrite(32, regulator.getResult());
-            regulator.setpoint = hub.getValue("hotendSpinner").toInt();
+            if (Temp > 20) {
+                regulator.input = Temp;
+                analogWrite(32, int(regulator.getResult()));
+                regulator.setpoint = hub.getValue("hotendSpinner").toInt();
+            } else hub.sendPush("Что пошло не так с нагревателем...");
         } else analogWrite(32, 0);
         
-        #ifdef buildGraph
-        
-        if (tempCounter < 1000) {
-            ++tempCounter;
-            Serial.println(Temp);
-        }
-            
-        #endif
-
-
         // Логирование
         #ifdef logEnable
             String L = "Температура хотенда: " + String(Temp) +  
@@ -157,6 +163,26 @@ void hubStateHandler() {
 
         if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
         else hub.update("heatingLed").value(0);
+
+#ifdef buildGraph
+        if (tempCounter < 1000) {
+            ++tempCounter;
+            Serial.println(Temp);
+            
+        } else if (tempCounter == 1000) {
+            ++tempCounter;
+            hub.sendPush("Замер тысячи измерений окончен.");
+        }
+        // Инфа на дисплеи
+        hub.update("displayP").value(regulator.Kp);
+        hub.update("displayI").value(regulator.Ki);
+        hub.update("displayD").value(regulator.Kd);
+
+        hub.update("displayTemp").value(Temp);
+        hub.update("displayResult").value(regulator.getResult());
+        hub.update("displayOutput").value(regulator.output);
+
+#endif
     }
 
 }

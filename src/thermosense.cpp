@@ -311,9 +311,11 @@ void thermosenseSetup() {
 }
 
 double thermosenseMeasurment() {
-    static double TcValues[sizeMeasureArray] = {0}; // Массив для хранения 10 значений Tc
+    static double TcValues[sizeMeasureArray] = {0}; // Массив для хранения значений Tc
     static int index = 0;             // Индекс для записи нового значения в массив
     static bool filled = false;       // Флаг, показывающий, заполнен ли массив полностью
+    static int errorCounter = 0;      // Счетчик ошибок
+    const int maxErrors = 5;          // Максимальное количество допустимых ошибок подряд
 
     double Vout, Rt = 0;
     double T, Tc, Tf = 0;
@@ -329,21 +331,51 @@ double thermosenseMeasurment() {
     Tc = T - 273.15;                        // Celsius
     Tf = Tc * 9 / 5 + 32;                   // Fahrenheit
 
+    // Если массив уже заполнен, вычисляем текущее среднее значение
+    double currentAverage = 0;
+    if (filled) {
+        double sum = 0;
+        for (int i = 0; i < sizeMeasureArray; i++) {
+            sum += TcValues[i];
+        }
+        currentAverage = sum / sizeMeasureArray;
+    }
+
+    // Проверка на допустимое отклонение нового значения
+    if (filled && abs(Tc - currentAverage) > 10) {
+        errorCounter++; // Увеличиваем счетчик ошибок
+
+        // Если количество ошибок превысило допустимый лимит, отключаем нагрев
+        if (errorCounter >= maxErrors) {
+            return Tc;
+        }
+
+        // Если отклонение слишком велико, игнорируем новое значение
+        // и возвращаем текущее среднее значение
+        return currentAverage;
+    } else {
+        errorCounter = 0; // Сбрасываем счетчик ошибок, если все нормально
+    }
+
     // Обновляем массив значений Tc
     TcValues[index] = Tc;
     index = (index + 1) % sizeMeasureArray; // Циклически увеличиваем индекс
 
-    // Если массив полностью заполнен, выводим среднее значение
+    // Если массив полностью заполнен, устанавливаем флаг
     if (!filled && index == 0) {
-        filled = true; // Устанавливаем флаг, что массив заполнен
+        filled = true;
     }
 
+    // Если массив заполнен, возвращаем среднее значение
     if (filled) {
         double sum = 0;
         for (int i = 0; i < sizeMeasureArray; i++) {
             sum += TcValues[i];
         }
         double averageTc = sum / sizeMeasureArray; // Вычисляем среднее арифметическое
-        return(averageTc);
+        return averageTc;
     }
+
+    // Если массив еще не заполнен, возвращаем текущее значение
+    return Tc;
 }
