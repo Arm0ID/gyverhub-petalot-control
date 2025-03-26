@@ -10,25 +10,20 @@ GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя уст�
 float PID_P = 31;
 float PID_I = -0.3;
 float PID_D = 32;
-//PID p: 32.96	PID i: -0.27	PID d: 137.56
 
-// Экземпляр GyverPID
-GyverPID regulator(PID_P, PID_I, PID_D);
+GyverPID regulator(PID_P, PID_I, PID_D); // Экземпляр GyverPID
 
-// Экземпляр таймера
-gh::Timer tmr2(100);
+gh::Timer tmr2(100); // Экземпляр таймера
 
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
 bool flagStepperEnable = false;  // Флаг включения вращения
 bool hotendLedState = false;
 bool stepperLedState = false;
-static int tempCounter = 0; // Временное хранилище для построения графиков
 
-int hotendSpinnerValue = 120; // Хранит базовое значение спиннера хотенда и нагрев
+int hotendSpinnerValue = 120; // Хранит базовое значение для спиннера хотенда и нагрева
 
-// билдер
-void build(gh::Builder& b) {
+void build(gh::Builder& b) { // билдер
 
     //Первый виджет, общее состояние системы
     {
