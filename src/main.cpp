@@ -8,8 +8,9 @@ GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя уст�
 
 // Стартовые значения PID
 float PID_P = 31;
-float PID_I = 0.0;
+float PID_I = -0.3;
 float PID_D = 32;
+//PID p: 32.96	PID i: -0.27	PID d: 137.56
 
 // Экземпляр GyverPID
 GyverPID regulator(PID_P, PID_I, PID_D);

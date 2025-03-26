@@ -12,6 +12,7 @@
 #include "driver/uart.h"
 #include "freertos/queue.h"
 #include "settings.h"
+#include "median.h"
 
 void thermosenseSetup();
 double thermosenseMeasurment();
