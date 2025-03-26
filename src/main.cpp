@@ -8,7 +8,7 @@ GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя уст�
 
 // Стартовые значения PID
 float PID_P = 19.2;
-float PID_I = 3.84;
+float PID_I = 1;
 float PID_D = 24.0;
 
 // Экземпляр GyverPID
@@ -87,7 +87,15 @@ void build(gh::Builder& b) {
             {
                 gh::Row r(b);
                 b.Label("Калибровка PID:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
-                if (b.LED_("heatingLed").value(0).size(1).label("нагрев:").noTab().fontSize(12).click()) tempCounter = 0;
+                #ifdef buildGraph
+                if (b.Button().icon("").noLabel().noTab().size(1,10).click()) {
+                    Serial.println("");
+                    Serial.println("Сброс и начало новых измерений до 1000.");
+                    Serial.println("");
+                    tempCounter = 0;
+                }
+                #endif
+                b.LED_("heatingLed").value(0).size(1).label("нагрев:").noTab().fontSize(12);
             }
             {
                 gh::Row r(b);
