@@ -185,6 +185,7 @@ void hubStateHandler() {
 
 
 void setup() {
+    hub.setVersion("Arm0ID/gyverhub-petalot-control@0.63");
 
     #ifdef logEnable
     Serial.begin(115200);

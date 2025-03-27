@@ -1,0 +1,17 @@
+{
+    "name": "Управление PETALOT с помощью GyverHub",
+    "about": "Данный проект позволяет управлять нагревательным блоком от 3D принтера и шаговым двигателем для создания прутка из PET бутылки.",
+    "version": "0.63",
+    "notes": "Добавлено OTO-обновление.",
+    "builds": [
+      {
+        "chipFamily": "ESP32",
+        "parts": [
+          {
+            "path": "https://github.com/Arm0ID/gyverhub-petalot-control/blob/master/bin/firmware.bin",
+            "offset": 0
+          }
+        ]
+      }
+    ]
+  }
