@@ -8,7 +8,7 @@
         "chipFamily": "ESP32",
         "parts": [
           {
-            "path": "https://github.com/Arm0ID/gyverhub-petalot-control/master/bin/firmware.bin",
+            "path": "https://raw.githubusercontent.com/Arm0ID/gyverhub-petalot-control/master/bin/firmware.bin",
             "offset": 0
           }
         ]
