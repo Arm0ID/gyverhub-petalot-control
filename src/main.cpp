@@ -1,7 +1,7 @@
-#include <GyverHub.h>
-#include "secrets.h"
-#include "thermosense.h"
-#include "GyverPID.h"
+#include "includes.h"
+
+// Экземпляр GyverStepper
+GStepper2<STEPPER2WIRE> stepper(3200, 18, 19); //steps, step, dir, en
 
 // Экземпляр GyverHUB
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
@@ -11,9 +11,12 @@ float PID_P = 31;
 float PID_I = -0.3;
 float PID_D = 32;
 
-GyverPID regulator(PID_P, PID_I, PID_D); // Экземпляр GyverPID
+// Экземпляр GyverPID
+GyverPID regulator(PID_P, PID_I, PID_D); 
 
-gh::Timer tmr2(100); // Экземпляр таймера
+// Экземпляр таймера
+gh::Timer tmr2(100);
+gh::Timer tmr3(200);
 
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
@@ -22,6 +25,16 @@ bool hotendLedState = false;
 bool stepperLedState = false;
 
 int hotendSpinnerValue = 120; // Хранит базовое значение для спиннера хотенда и нагрева
+int stepperSpeedValue = 20; // Хранит базовое значение для спиннера хотенда и нагрева
+
+// // Настройка ШД
+int minStepperSpeed = 1; //(см/минуту)
+int maxStepperSpeed = 80; //(см/минуту) ~2об/секунду ШД, ~70см/минуту
+
+
+// // Настройка намотки
+// float firstCircuitFilamentSpool = 29.02; //(см.) Длина одного витка катушки
+// float gearRatio = 46.125; // Коэф. понижения с ШД на катушку
 
 void build(gh::Builder& b) { // билдер
 
@@ -31,7 +44,7 @@ void build(gh::Builder& b) { // билдер
     b.Label("Status:").size(3).noLabel().align(gh::Align::Left).fontSize(32);
     b.LED().value(0).size(1).noLabel();
     }
-    //Второй виджет, управление температурой нагревателя
+    //Блок управления температурой нагревателя
     {
     gh::Col r(b);
         {
@@ -56,26 +69,28 @@ void build(gh::Builder& b) { // билдер
     }
     //Третий виджет, управление скоростью ШД
     {
-        gh::Col r(b);
-            {
-            gh::Row r(b);
-            b.Label("Скорость ШД:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
-            b.LED_("stepperLed").value(0).size(1).noLabel().noTab();
-            
-            }
-        b.GaugeLinear().value(20).icon("").range(5,20,1).unit(" См/мин").noLabel().size(2);
-            {
-            gh::Row r(b);
-            b.Label("Намотки нити:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
-            b.Spinner().value(230).noLabel().range(5,20,1).size(2);
-            if (b.Button().icon("").noLabel().size(1).click()) {
-                #ifdef logEnable
-                Serial.println("Нажата кнопка включения/выключения ШД.");
-                #endif
-                flagStepperEnable = !flagStepperEnable;
-            }
-            }
+    gh::Col r(b);
+        {
+        gh::Row r(b);
+        b.Label("Скорость ШД:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
+        b.LED_("stepperLed").value(0).size(1).noLabel().noTab();
+        
         }
+    b.GaugeLinear().value(20).icon("").range(minStepperSpeed,maxStepperSpeed,1).unit(" См/мин").noLabel().size(2);
+        {
+        gh::Row r(b);
+        b.Label("Намотки нити:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
+        b.Spinner_("stepperSpinner",&stepperSpeedValue).value(20).noLabel().range(minStepperSpeed,maxStepperSpeed,1).size(2);
+        if (b.Button().icon("").noLabel().size(1).click()) {
+            #ifdef logEnable
+            Serial.println("Нажата кнопка включения/выключения ШД.");
+            #endif
+            flagStepperEnable = !flagStepperEnable;
+            stepperLedState = !stepperLedState; 
+            hub.update("stepperLed").value(stepperLedState);
+        }
+        }
+    }
     //Четвертый виджет, настройка PID
     {
         gh::Col r(b);
@@ -119,19 +134,16 @@ void build(gh::Builder& b) { // билдер
                 b.Display_("displayOutput").label("Вывод Output(PID):").align(gh::Align::Center).fontSize(16).size(1, 10);
             }
             #endif
+            #ifdef stepperLogging
+                b.Display_("displayStepperPos").label("stepper pos").align(gh::Align::Center).fontSize(16);
+            #endif
     }
 }
 
 
 void hubStateHandler() {
 
-    if (flagStepperEnable == true) {
-        hub.update("stepperLed").value(1);
-    } else {
-        hub.update("stepperLed").value(0);
-    }
-
-    if (tmr2) {
+    // if (tmr2) {
         double Temp = thermosenseMeasurment();
 
         //Обновляем температуру в GUI
@@ -160,6 +172,15 @@ void hubStateHandler() {
         if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
         else hub.update("heatingLed").value(0);
 
+        //Калькуляции и преобразовании для намотки
+        int32_t stepperSpinnerValue = hub.getValue("stepperSpinner").toInt();
+        int32_t stepperImpulseSpeed = int(stepperSpinnerValue * 84.76821); //TODO: переделать на формулу
+
+        //Устанавливаем скорость мотору
+        stepper.setSpeed(stepperImpulseSpeed);
+#ifdef stepperLogging
+        hub.update("displayStepperPos").value(stepper.pos);
+#endif
 #ifdef buildGraph
         if (tempCounter < 1000) {
             ++tempCounter;
@@ -179,8 +200,10 @@ void hubStateHandler() {
         hub.update("displayOutput").value(regulator.output);
 
 #endif
-    }
 
+    //hub.tick();
+    // }
+    
 }
 
 
@@ -214,6 +237,12 @@ void setup() {
 }
 
 void loop() {
-    hubStateHandler();
-    hub.tick();         // тикаем тут     
+    if (tmr2) {
+        hubStateHandler();
+    }
+    if (tmr3) {
+        hub.tick();
+    }
+    // hub.tick();         // тикаем тут 
+    if (flagStepperEnable) stepper.tick(); // Шагаем двигателем    
 }

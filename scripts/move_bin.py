@@ -2,9 +2,9 @@ import os
 import shutil
 from pathlib import Path
 
-Import("env") # type: ignore
+Import("env")  # type: ignore
 
-def move_firmware_bin(source, target, env):
+def copy_firmware_bin(source, target, env):
     # Определяем путь к исходному файлу firmware.bin
     firmware_bin = Path(env.subst("$BUILD_DIR")) / "firmware.bin"
     
@@ -17,10 +17,10 @@ def move_firmware_bin(source, target, env):
     output_dir = Path("bin")
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Перемещаем файл firmware.bin в директорию /bin
+    # Копируем файл firmware.bin в директорию /bin
     destination = output_dir / firmware_bin.name
-    shutil.move(firmware_bin, destination)
-    print(f"Moved {firmware_bin} to {destination}")
+    shutil.copy(firmware_bin, destination)
+    print(f"Copied {firmware_bin} to {destination}")
 
 # Регистрируем функцию для выполнения после сборки
-env.AddPostAction("$BUILD_DIR/firmware.bin", move_firmware_bin) # type: ignore
+env.AddPostAction("$BUILD_DIR/firmware.bin", copy_firmware_bin)  # type: ignore
