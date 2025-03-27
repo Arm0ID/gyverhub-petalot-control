@@ -185,8 +185,7 @@ void hubStateHandler() {
 
 
 void setup() {
-    hub.setVersion("Arm0ID/gyverhub-petalot-control@0.63");
-
+    
     #ifdef logEnable
     Serial.begin(115200);
     #endif
@@ -210,6 +209,8 @@ void setup() {
     regulator.setDirection(NORMAL); // направление регулирования (NORMAL/REVERSE). ПО УМОЛЧАНИЮ СТОИТ NORMAL
     regulator.setLimits(0, 255);    // пределы (ставим для 8 битного ШИМ). ПО УМОЛЧАНИЮ СТОЯТ 0 И 255
     regulator.setpoint = 50;        // сообщаем регулятору температуру, которую он должен поддерживать
+
+    hub.setVersion("Arm0ID/gyverhub-petalot-control@0.64");
 }
 
 void loop() {
