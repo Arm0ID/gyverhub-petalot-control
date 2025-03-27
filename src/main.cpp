@@ -210,7 +210,7 @@ void setup() {
     regulator.setLimits(0, 255);    // пределы (ставим для 8 битного ШИМ). ПО УМОЛЧАНИЮ СТОЯТ 0 И 255
     regulator.setpoint = 50;        // сообщаем регулятору температуру, которую он должен поддерживать
 
-    hub.setVersion("Arm0ID/gyverhub-petalot-control@0.64");
+    hub.setVersion("Arm0ID/gyverhub-petalot-control@" + String(VERSION));
 }
 
 void loop() {
