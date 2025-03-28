@@ -1,7 +1,7 @@
 #include "includes.h"
 
 // Экземпляр GyverStepper
-GStepper2<STEPPER2WIRE> stepper(3200, 18, 19); //steps, step, dir, en
+GStepper2<STEPPER2WIRE> stepper(3200, 18, 19); //шагов/оборот, step, dir, en
 
 // Экземпляр GyverHUB
 GyverHub hub("MyDevices", "PETALOT", "");  // имя сети, имя устройства, иконка
@@ -30,6 +30,10 @@ int stepperSpeedValue = 20; // Хранит базовое значение дл
 // // Настройка ШД
 int minStepperSpeed = 1; //(см/минуту)
 int maxStepperSpeed = 80; //(см/минуту) ~2об/секунду ШД, ~70см/минуту
+int stepsPerRevolution = 3200; // Шагов на оборот ШД
+float circumference = 29.02; // Длина окружности катушки(см)
+float gearRatio = 46.125; // передаточное число
+
 
 
 // // Настройка намотки
@@ -76,7 +80,7 @@ void build(gh::Builder& b) { // билдер
         b.LED_("stepperLed").value(0).size(1).noLabel().noTab();
         
         }
-    b.GaugeLinear().value(20).icon("").range(minStepperSpeed,maxStepperSpeed,1).unit(" См/мин").noLabel().size(2);
+    b.GaugeLinear_("stepperGaugeLinear").value(20).icon("").range(minStepperSpeed,maxStepperSpeed,1).unit(" См/мин").noLabel().size(2);
         {
         gh::Row r(b);
         b.Label("Намотки нити:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
@@ -143,7 +147,6 @@ void build(gh::Builder& b) { // билдер
 
 void hubStateHandler() {
 
-    // if (tmr2) {
         double Temp = thermosenseMeasurment();
 
         //Обновляем температуру в GUI
@@ -157,8 +160,7 @@ void hubStateHandler() {
             } else hub.sendPush("Что пошло не так с нагревателем...");
         } else analogWrite(32, 0);
         
-        // Логирование
-        #ifdef logEnable
+        #ifdef logEnable // Логирование
             String L = "Температура хотенда: " + String(Temp) +  
                         " Команда GyverPID: " + String(regulator.getResult()) + 
                         " Установлена температура: " + hub.getValue("hotendSpinner");
@@ -172,12 +174,18 @@ void hubStateHandler() {
         if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
         else hub.update("heatingLed").value(0);
 
-        //Калькуляции и преобразовании для намотки
-        int32_t stepperSpinnerValue = hub.getValue("stepperSpinner").toInt();
-        int32_t stepperImpulseSpeed = int(stepperSpinnerValue * 84.76821); //TODO: переделать на формулу
+        // Расчеты
+        float required_speed = hub.getValue("stepperSpinner").toInt();
+        float spoolRpm = required_speed / circumference;                     // Обороты катушки (об/мин)
+        float motorRpm = spoolRpm * gearRatio;                            // Обороты шагового двигателя (об/мин)
+        float motorRps = motorRpm / 60.0;                                  // Обороты шагового двигателя (об/сек)
+        float stepFrequencyFloat = motorRps * stepsPerRevolution;       // Частота шагов (шагов/сек)
 
         //Устанавливаем скорость мотору
-        stepper.setSpeed(stepperImpulseSpeed);
+        stepper.setSpeed(static_cast<int32_t>(stepFrequencyFloat)); // шагов в секунду
+
+        //Обновляем stepper линейную панель
+        hub.update("stepperGaugeLinear").value(required_speed);
 #ifdef stepperLogging
         hub.update("displayStepperPos").value(stepper.pos);
 #endif
@@ -200,9 +208,6 @@ void hubStateHandler() {
         hub.update("displayOutput").value(regulator.output);
 
 #endif
-
-    //hub.tick();
-    // }
     
 }
 
