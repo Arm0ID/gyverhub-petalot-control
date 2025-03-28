@@ -23,6 +23,7 @@ bool flagHotendEnable = false;  // Флаг включения нагреват�
 bool flagStepperEnable = false;  // Флаг включения вращения
 bool hotendLedState = false;
 bool stepperLedState = false;
+bool isfilamentCountingPlay = false;
 
 int hotendSpinnerValue = 120; // Хранит базовое значение для спиннера хотенда и нагрева
 int stepperSpeedValue = 20; // Хранит базовое значение для спиннера хотенда и нагрева
@@ -34,6 +35,7 @@ int stepsPerRevolution = 3200; // Шагов на оборот ШД
 float circumference = 29.02; // Длина окружности катушки(см)
 float gearRatio = 46.125; // передаточное число
 
+float filamentCount = 0; //Счетчик филамента
 
 
 // // Настройка намотки
@@ -93,6 +95,15 @@ void build(gh::Builder& b) { // билдер
             stepperLedState = !stepperLedState; 
             hub.update("stepperLed").value(stepperLedState);
         }
+        }
+    }
+    // Блок с намотанном кол-вом
+    {
+        gh::Row r(b);
+        b.Display_("displayFilamentCount", &filamentCount).value(filamentCount).size(4).fontSize(16).label("Наматано за ссесию(~см): ");
+        if (b.Button().icon("").noLabel().noTab().size(1).click()) stepper.reset();
+        if (b.Button_("buttonPlay").icon("").noLabel().size(1).noTab().click()) {
+            isfilamentCountingPlay = !isfilamentCountingPlay;
         }
     }
     //Четвертый виджет, настройка PID
@@ -183,9 +194,24 @@ void hubStateHandler() {
 
         //Устанавливаем скорость мотору
         stepper.setSpeed(static_cast<int32_t>(stepFrequencyFloat)); // шагов в секунду
-
+        
         //Обновляем stepper линейную панель
         hub.update("stepperGaugeLinear").value(required_speed);
+
+        if (isfilamentCountingPlay) {
+            hub.update("buttonPlay").icon("");
+        } else hub.update("buttonPlay").icon("");
+
+        //hub.update("displayFilamentCount").value(filamentCount);
+
+        // Расчеты
+        int32_t currentSteps = stepper.getCurrent(); // Текущая позиция мотора (шаги)
+        float motorRevolutions = static_cast<float>(currentSteps) / stepsPerRevolution; // Обороты двигателя
+        float spoolRevolutions = motorRevolutions / gearRatio;                          // Обороты катушки
+        float filamentCount = spoolRevolutions * circumference;                        // Длина намотанного филамента
+        
+        hub.update("displayFilamentCount").value(filamentCount);
+        
 #ifdef stepperLogging
         hub.update("displayStepperPos").value(stepper.pos);
 #endif
