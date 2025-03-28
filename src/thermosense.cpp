@@ -11,7 +11,7 @@
 // https://github.com/espressif/esp-idf/issues/164
 // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/adc.html#adc-calibration
 
-#include "thermosense.h"
+#include "includes.h"
 
 // Шаблон фильтра
 GMedian<8, double> testFilter; //указываем размер окна и тип данных в <>  
