@@ -1,4 +1,6 @@
 #include "includes.h"
+#include "secrets.h"     //  (Wi-Fi и т.д.)
+
 
 // Экземпляр GyverStepper
 GStepper2<STEPPER2WIRE> stepper(3200, 18, 19); //шагов/оборот, step, dir, en
