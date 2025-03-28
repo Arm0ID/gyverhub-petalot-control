@@ -239,10 +239,7 @@ void setup() {
 void loop() {
     if (tmr2) {
         hubStateHandler();
-    }
-    if (tmr3) {
         hub.tick();
     }
-    // hub.tick();         // тикаем тут 
     if (flagStepperEnable) stepper.tick(); // Шагаем двигателем    
 }
