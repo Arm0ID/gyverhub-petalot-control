@@ -39,6 +39,7 @@ float gearRatio = 46.125; // передаточное число
 
 static float filamentCount = 0; //временный Счетчик филамента
 static float currentFilamentCount = 0; //Общий счетчик филамент за сессию
+static float currentFilamentCountM = 0; //в метрах
 
 // // Настройка намотки
 // float firstCircuitFilamentSpool = 29.02; //(см.) Длина одного витка катушки
@@ -98,7 +99,11 @@ void build(gh::Builder& b) { // билдер
     // Блок с намотанном кол-вом
     {
         gh::Row r(b);
-        b.Display_("displayFilamentCount", &filamentCount).value(filamentCount).size(4).fontSize(16).label("Наматано за ссесию(~см): ");
+        
+        b.Display_("displayFilamentCount", &currentFilamentCount).value(currentFilamentCount).size(2).fontSize(16).label("Намотано за ссесию: ").suffix("~см");
+        b.Display_("displayFilamentCountM", &currentFilamentCountM).value(currentFilamentCountM).size(2).fontSize(16).label("Намотано за ссесию: ").suffix("~м");
+        
+
         if (b.Button().icon("").noLabel().noTab().size(1).click()) currentFilamentCount = 0;
         if (b.Button_("buttonPlay").icon("").noLabel().size(1).noTab().click()) {
             isfilamentCountingPlay = !isfilamentCountingPlay;
@@ -220,6 +225,7 @@ void hubStateHandler() {
             // Если PLAY
             currentFilamentCount += filamentCount; // Увеличиваем общий счетчик
             hub.update("displayFilamentCount").value(currentFilamentCount); // Обновляем дисплей
+            hub.update("displayFilamentCountM").value(currentFilamentCount / 100);
             hub.update("buttonPlay").icon(""); // Меняем иконку кнопки на "PLAY"
         } else {
             // Если PAUSE
