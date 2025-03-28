@@ -37,8 +37,8 @@ int stepsPerRevolution = 3200; // Шагов на оборот ШД
 float circumference = 29.02; // Длина окружности катушки(см)
 float gearRatio = 46.125; // передаточное число
 
-float filamentCount = 0; //Счетчик филамента
-
+static float filamentCount = 0; //временный Счетчик филамента
+static float currentFilamentCount = 0; //Общий счетчик филамент за сессию
 
 // // Настройка намотки
 // float firstCircuitFilamentSpool = 29.02; //(см.) Длина одного витка катушки
@@ -56,7 +56,7 @@ void build(gh::Builder& b) { // билдер
     {
     gh::Col r(b);
         {
-        gh::Row r(b);
+        gh::Row r(b); 
         b.Label("Температура:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
         b.LED_("hotendLed",&hotendLedState).value(0).size(1).noLabel().noTab();
         }
@@ -70,14 +70,12 @@ void build(gh::Builder& b) { // билдер
             Serial.println("Нажата кнопка включения/выключения хотенда.");
             #endif
             flagHotendEnable = !flagHotendEnable;
-            hotendLedState = !hotendLedState; 
-            hub.update("hotendLed").value(hotendLedState);
         }
         }
     }
     //Третий виджет, управление скоростью ШД
     {
-    gh::Col r(b);
+    gh::Col r(b); 
         {
         gh::Row r(b);
         b.Label("Скорость ШД:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
@@ -94,8 +92,6 @@ void build(gh::Builder& b) { // билдер
             Serial.println("Нажата кнопка включения/выключения ШД.");
             #endif
             flagStepperEnable = !flagStepperEnable;
-            stepperLedState = !stepperLedState; 
-            hub.update("stepperLed").value(stepperLedState);
         }
         }
     }
@@ -103,9 +99,15 @@ void build(gh::Builder& b) { // билдер
     {
         gh::Row r(b);
         b.Display_("displayFilamentCount", &filamentCount).value(filamentCount).size(4).fontSize(16).label("Наматано за ссесию(~см): ");
-        if (b.Button().icon("").noLabel().noTab().size(1).click()) stepper.reset();
+        if (b.Button().icon("").noLabel().noTab().size(1).click()) currentFilamentCount = 0;
         if (b.Button_("buttonPlay").icon("").noLabel().size(1).noTab().click()) {
             isfilamentCountingPlay = !isfilamentCountingPlay;
+            if (isfilamentCountingPlay) stepper.reset();
+            if (!isfilamentCountingPlay) {
+                // Переход в режим PAUSE: сброс временного счетчика
+                stepper.reset(); // Сбрасываем позицию мотора
+                filamentCount = 0; // Сбрасываем временный счетчик
+            }
         }
     }
     //Четвертый виджет, настройка PID
@@ -166,14 +168,20 @@ void hubStateHandler() {
         hub.update("hotendGaugeLinear").value(Temp);
       
         if (flagHotendEnable == true) {
-            if (Temp > 20) {
+            if (Temp > 20) { // Защита от отвала датчика
                 regulator.input = Temp;
                 analogWrite(32, int(regulator.getResult()));
                 regulator.setpoint = hub.getValue("hotendSpinner").toInt();
+                if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
+                else hub.update("heatingLed").value(0);
+                hub.update("hotendLed").value(1);
             } else hub.sendPush("Что пошло не так с нагревателем...");
-        } else analogWrite(32, 0);
-        
-        #ifdef logEnable // Логирование
+        } else {
+            analogWrite(32, 0);
+            hub.update("hotendLed").value(0);
+            hub.update("heatingLed").value(0);
+        }
+        #ifdef logEnable // Логирование хотенда
             String L = "Температура хотенда: " + String(Temp) +  
                         " Команда GyverPID: " + String(regulator.getResult()) + 
                         " Установлена температура: " + hub.getValue("hotendSpinner");
@@ -183,9 +191,6 @@ void hubStateHandler() {
         regulator.Kp = hub.getValue("inputPID_P").toFloat();
         regulator.Ki = hub.getValue("inputPID_I").toFloat();
         regulator.Kd = hub.getValue("inputPID_D").toFloat();
-
-        if (regulator.getResult() > 0) hub.update("heatingLed").value(1);
-        else hub.update("heatingLed").value(0);
 
         // Расчеты
         float required_speed = hub.getValue("stepperSpinner").toInt();
@@ -200,20 +205,39 @@ void hubStateHandler() {
         //Обновляем stepper линейную панель
         hub.update("stepperGaugeLinear").value(required_speed);
 
-        if (isfilamentCountingPlay) {
-            hub.update("buttonPlay").icon("");
-        } else hub.update("buttonPlay").icon("");
 
-        //hub.update("displayFilamentCount").value(filamentCount);
-
-        // Расчеты
         int32_t currentSteps = stepper.getCurrent(); // Текущая позиция мотора (шаги)
         float motorRevolutions = static_cast<float>(currentSteps) / stepsPerRevolution; // Обороты двигателя
         float spoolRevolutions = motorRevolutions / gearRatio;                          // Обороты катушки
         float filamentCount = spoolRevolutions * circumference;                        // Длина намотанного филамента
         
-        hub.update("displayFilamentCount").value(filamentCount);
+  
+        if (flagStepperEnable) hub.update("stepperLed").value(true);
+        else hub.update("stepperLed").value(false);
         
+        // Блок подсчета намотанного на катушку
+        if (isfilamentCountingPlay) {
+            // Если PLAY
+            currentFilamentCount += filamentCount; // Увеличиваем общий счетчик
+            hub.update("displayFilamentCount").value(currentFilamentCount); // Обновляем дисплей
+            hub.update("buttonPlay").icon(""); // Меняем иконку кнопки на "PLAY"
+        } else {
+            // Если PAUSE
+            hub.update("buttonPlay").icon(""); // Меняем иконку кнопки на "PAUSE"
+        }
+
+        
+
+
+
+
+
+
+
+
+
+
+
 #ifdef stepperLogging
         hub.update("displayStepperPos").value(stepper.pos);
 #endif
