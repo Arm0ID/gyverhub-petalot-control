@@ -1,6 +1,10 @@
 #include "includes.h"
 #include "secrets.h"     //  (Wi-Fi и т.д.)
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
+TaskHandle_t stepperTaskHandle = NULL;
+TaskHandle_t hubTaskHandle = NULL;
 
 // Экземпляр GyverStepper
 GStepper2<STEPPER2WIRE> stepper(3200, 18, 19); //шагов/оборот, step, dir, en
@@ -233,18 +237,6 @@ void hubStateHandler() {
             hub.update("buttonPlay").icon(""); // Меняем иконку кнопки на "PAUSE"
         }
 
-        
-
-
-
-
-
-
-
-
-
-
-
 #ifdef stepperLogging
         hub.update("displayStepperPos").value(stepper.pos);
 #endif
@@ -271,39 +263,70 @@ void hubStateHandler() {
 }
 
 
+void stepperTask(void *parameter) {
+    while (true) {
+        if (flagStepperEnable) stepper.tick();
+        vTaskDelay(pdMS_TO_TICKS(1)); // Минимальная задержка для освобождения процессора
+    }
+}
+
+void hubTask(void *parameter) {
+    while (true) {
+        hubStateHandler();
+        hub.tick();
+        vTaskDelay(pdMS_TO_TICKS(100)); // Выполняем с интервалом 100 мс
+    }
+}
+
+
 void setup() {
-    
     #ifdef logEnable
     Serial.begin(115200);
     #endif
     Serial.begin(115200);
+
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-    
-    // настройка MQTT/Serial/Bluetooth..
-    hub.onBuild(build); // подключаем билдер
-    hub.begin();        // запускаем систему
+
+    // Инициализация MQTT/Serial/Bluetooth...
+    hub.onBuild(build); // Подключаем билдер
+    hub.begin();        // Запускаем систему
     Serial.println("Petalot GyverHub запущен!");
 
-    // Инициализация ТермоИзмерений
+    // Инициализация термоизмерений
     thermosenseSetup();
 
     // Инициализация GyverPID
-    regulator.setDirection(NORMAL); // направление регулирования (NORMAL/REVERSE). ПО УМОЛЧАНИЮ СТОИТ NORMAL
-    regulator.setLimits(0, 255);    // пределы (ставим для 8 битного ШИМ). ПО УМОЛЧАНИЮ СТОЯТ 0 И 255
-    regulator.setpoint = 50;        // сообщаем регулятору температуру, которую он должен поддерживать
+    regulator.setDirection(NORMAL); // Направление регулирования
+    regulator.setLimits(0, 255);    // Пределы
+    regulator.setpoint = 50;        // Целевая температура
 
     hub.setVersion("Arm0ID/gyverhub-petalot-control@" + String(VERSION));
+
+    // Создание задач FreeRTOS
+    xTaskCreate(
+        stepperTask,    // Функция задачи
+        "Stepper Task", // Имя задачи
+        2048,           // Размер стека (в словах)
+        NULL,           // Параметр задачи
+        2,              // Приоритет (высший)
+        &stepperTaskHandle
+    );
+
+    xTaskCreate(
+        hubTask,        // Функция задачи
+        "Hub Task",     // Имя задачи
+        4096,           // Размер стека (в словах)
+        NULL,           // Параметр задачи
+        1,              // Приоритет (средний)
+        &hubTaskHandle
+    );
 }
 
 void loop() {
-    if (tmr2) {
-        hubStateHandler();
-        hub.tick();
-    }
-    if (flagStepperEnable) stepper.tick(); // Шагаем двигателем    
+ 
 }
