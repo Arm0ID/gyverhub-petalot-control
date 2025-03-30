@@ -18,7 +18,6 @@ GyverPID regulator(PID_P, PID_I, PID_D);
 
 // Экземпляр таймера
 gh::Timer tmr2(100);
-gh::Timer tmr3(200);
 
 // Глобальные переменные-флаги
 bool flagHotendEnable = false;  // Флаг включения нагревателя
@@ -93,6 +92,8 @@ void build(gh::Builder& b) { // билдер
             Serial.println("Нажата кнопка включения/выключения ШД.");
             #endif
             flagStepperEnable = !flagStepperEnable;
+            if (!flagStepperEnable) stepper.pause();
+
         }
         }
     }

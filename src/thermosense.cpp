@@ -21,7 +21,7 @@ bool esp32 = true;       // change to false when using Arduino
 int ThermistorPin;
 double adcMax, Vs;
 
-double R1 = 100000.0;   // voltage divider resistor value
+double R1 = 1000.0;   // voltage divider resistor value
 double Beta = 3950.0;  // Beta value
 double To = 298.15;    // Temperature in Kelvin for 25 degree Celsius
 double Ro = 100000.0;   // Resistance of Thermistor at 25 degree Celsius
