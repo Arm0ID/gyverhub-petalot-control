@@ -64,11 +64,11 @@ void build(gh::Builder& b) { // билдер
         b.Label("Температура:").noTab().noLabel().align(gh::Align::Left).fontSize(24).size(3);
         b.LED_("hotendLed",&hotendLedState).value(0).size(1).noLabel().noTab();
         }
-    b.GaugeLinear_("hotendGaugeLinear").value(33).icon("").range(0,300,1).unit("°").noLabel().size(2);
+    b.GaugeLinear_("hotendGaugeLinear").value(33).icon("").range(0,320,1).unit("°").noLabel().size(2);
         {
         gh::Row r(b);
         b.Label("Управление хотэндом:").noLabel().align(gh::Align::Left).fontSize(16).size(3);
-        b.Spinner_("hotendSpinner",&hotendSpinnerValue).value(hotendSpinnerValue).noLabel().range(40,270,2).size(2); //TODO: верни ограничения на 190
+        b.Spinner_("hotendSpinner",&hotendSpinnerValue).value(hotendSpinnerValue).noLabel().range(40,320,2).size(2); //TODO: верни ограничения на 190
         if (b.Button().icon("").noLabel().size(1).click()) {
             #ifdef logEnable
             Serial.println("Нажата кнопка включения/выключения хотенда.");

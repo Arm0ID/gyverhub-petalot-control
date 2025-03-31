@@ -4,9 +4,9 @@
 //#define logEnable // Логирование
 //#define buildGraph // Постройка графика
 //#define stepperLogging //Логирование шагового двигателя
-#define TIMECHECK
+//#define TIMECHECK
 
-#define VERSION 0.94
+#define VERSION 0.95
 
 // Настройки термоизмерений
 const static int sizeMeasureArray = 16; // Кол-во измерений для арифм. фильтра 
